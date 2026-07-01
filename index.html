@@ -323,6 +323,7 @@
   /* footer */
   .table-foot {
     background: var(--slate-light);
+    color: var(--navy);
     font-weight: 600;
     font-family: var(--mono);
   }
@@ -468,6 +469,9 @@
 <div class="table-wrap">
   <table id="mainTable">
     <thead>
+      <!-- เพิ่มแถวนี้เข้าไปด้านล่างของ th ภายใน thead -->
+      <tr id="topTotalRow" class="table-foot"></tr>
+
       <tr>
         <th data-col="no" class="td-no" style="text-align:center">ที่<span class="sort-icon">↕</span></th>
         <th data-col="h_rank" class="td-hrank" style="text-align:center">H<span class="sort-icon">↕</span></th>
@@ -482,7 +486,9 @@
         <th data-col="cite_2026" class="th-cite" style="text-align:center">2026<span class="sort-icon">↕</span></th>
         <th data-col="subtotal" class="th-cite" style="text-align:center;background:#0d4f44">รวม<span class="sort-icon">↕</span></th>
       </tr>
+
     </thead>
+
     <tbody id="tableBody"></tbody>
     <tfoot id="tableFoot"></tfoot>
   </table>
@@ -570,6 +576,16 @@ function renderRows() {
 
   tbody.innerHTML = rows;
 
+  const totalRowHTML = `
+    <td colspan="6" style="text-align:right;font-size:12px;color:var(--slate)">รวม ${filtered.length} รายการ</td>
+    <td class="td-cite" style="text-align:center">${totals.cite_2022}</td>
+    <td class="td-cite" style="text-align:center">${totals.cite_2023}</td>
+    <td class="td-cite" style="text-align:center">${totals.cite_2024}</td>
+    <td class="td-cite" style="text-align:center">${totals.cite_2025}</td>
+    <td class="td-cite" style="text-align:center">${totals.cite_2026}</td>
+    <td class="td-cite total nonzero" style="text-align:center">${totals.subtotal}</td>
+  `;
+
   foot.innerHTML = `<tr class="table-foot">
     <td colspan="6" style="text-align:right;font-size:12px;color:var(--slate)">รวม ${filtered.length} รายการ</td>
     <td class="td-cite">${totals.cite_2022}</td>
@@ -579,8 +595,18 @@ function renderRows() {
     <td class="td-cite">${totals.cite_2026}</td>
     <td class="td-cite total nonzero">${totals.subtotal}</td>
   </tr>`;
+  // ใส่ยอดรวมที่ท้ายตาราง (tfoot)
+  foot.innerHTML = `<tr class="table-foot">${totalRowHTML}</tr>`;
+
+  const topTotal = document.getElementById('topTotalRow');
+    if (topTotal) {
+      topTotal.innerHTML = totalRowHTML;
+    }
 
   document.getElementById('countBadge').textContent = `${filtered.length} รายการ`;
+
+  // อัปเดตตำแหน่งการยึดติดของหัวตารางทันทีหลังจากเรนเดอร์ข้อมูลเสร็จ
+  adjustStickyHeader();
 }
 
 function applyFilters() {
@@ -604,17 +630,6 @@ function applyFilters() {
   applySort();
 }
 
-function fixStickyHeader() {
-  const controls = document.querySelector('.controls');
-  const thead = document.querySelector('thead');
-  const resizeObserver = new ResizeObserver(() => {
-    thead.style.top = controls.offsetHeight + 'px';
-  });
-  resizeObserver.observe(controls);
-  thead.style.top = controls.offsetHeight + 'px';
-}
-fixStickyHeader();
-  
 function applySort() {
   filtered.sort((a, b) => {
     let av = a[sortCol], bv = b[sortCol];
@@ -649,8 +664,22 @@ document.querySelectorAll('thead th[data-col]').forEach(th => {
   el.addEventListener(id === 'searchInput' ? 'input' : 'change', applyFilters);
 });
 
-// Init
+// ฟังก์ชันคำนวณตำแหน่ง Sticky ของหัวตารางไม่ให้ซ้อนทับกับเมนูตัวกรอง
+function adjustStickyHeader() {
+  const controls = document.querySelector('.controls');
+  const thead = document.querySelector('thead');
+  if (controls && thead) {
+    // ใช้ความสูงจริงของเมนูตัวกรองเป็นระยะล็อคของหัวตาราง
+    thead.style.top = controls.offsetHeight + 'px';
+  }
+}
+
+// ให้ทำงานทุกครั้งเมื่อมีการย่อ-ขยายขนาดหน้าจอ
+window.addEventListener('resize', adjustStickyHeader);
+
+// Init (ของเดิม)
 applyFilters();
+
 </script>
 </body>
 </html>
